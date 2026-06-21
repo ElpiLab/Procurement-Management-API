@@ -188,6 +188,12 @@ Create SQLAlchemy ORM models:
 - Supplier-based rules
 - Department-based approvals
 - SAP sync conditions
+- How do CRUD applied here ?: CRUD is a basic concept in backend development. It stands for:
+
+Create → add new data (e.g., create a new user)
+Read → get or view data (e.g., load a user profile)
+Update → change existing data (e.g., edit your email)
+Delete → remove data (e.g., delete your account)
 
 
 ###
