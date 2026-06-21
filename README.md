@@ -180,6 +180,9 @@ Create SQLAlchemy ORM models:
 
 - From DBML to SQLAlchemy (Pyton Code)
 - Create Database file (The Engine)
+- Camunda Workflow: User > Purchase request > Manager Approval > Procurement Approval > Supplier Assignment > ERP/SAP Export
+- Prio:Signavioo Model: User > Purchase request > Manager Approval > Procurement Approval > Supplier Assignment > ERP/SAP Export
+- Status Model API Logic: Draft > Submitted > Manager Approved > Procurement Approved > Sent to Supplier > Completed > Rejected/Cancelled
 
 
 ###
