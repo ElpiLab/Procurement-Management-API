@@ -1,0 +1,221 @@
+// ======================================================
+// PROCUREMENT REQUEST MANAGEMENT SYSTEM
+// Database Schema (DBML)
+// ======================================================
+//
+// Purpose:
+// - Users create procurement requests
+// - Requests may be assigned to suppliers
+// - Approvers approve or reject requests
+// - System keeps an approval history
+//
+// Backend concepts you'll learn:
+// - Authentication
+// - One-to-many relationships
+// - Foreign keys
+// - CRUD operations
+// - Approval workflows
+// - Audit trails
+//
+// ======================================================
+
+// ======================================================
+// USERS
+// ======================================================
+//
+// Every person in the system lives here.
+//
+// Examples:
+// - Requester
+// - Approver
+// - Admin
+//
+// Instead of creating separate tables
+// (requester, buyer, approver),
+// we store everyone in one table.
+//
+
+Table users {
+id integer [pk, increment]
+
+name varchar [not null]
+email varchar [unique, not null]
+
+// Store hashed passwords only
+hashed_password varchar [not null]
+
+// Examples:
+// requester
+// approver
+// admin
+role varchar [not null]
+
+created_at timestamp [default: `now()`]
+}
+
+// ======================================================
+// SUPPLIERS
+// ======================================================
+//
+// Vendors that provide goods or services.
+//
+
+Table suppliers {
+id integer [pk, increment]
+
+name varchar [unique, not null]
+
+contact_person varchar
+email varchar
+phone varchar
+
+is_active boolean [default: true]
+}
+
+// ======================================================
+// PURCHASE REQUESTS
+// ======================================================
+//
+// Core table of the application.
+//
+// One requester creates many requests.
+//
+// Example:
+// "Need 5 laptops for new employees"
+//
+// Status flow:
+// draft
+// submitted
+// approved
+// rejected
+// ordered
+// delivered
+// closed
+//
+
+Table purchase_requests {
+id integer [pk, increment]
+
+title varchar [not null]
+description text
+
+// Procurement information
+quantity integer [default: 1]
+
+unit_price decimal(10,2)
+
+// Optional:
+// Store calculated total
+// You can also calculate it in code.
+total_price decimal(10,2)
+
+// Workflow status
+status varchar [default: 'draft']
+
+// Person who created request
+requester_id integer [not null, ref: > users.id]
+
+// Supplier may not be selected yet
+supplier_id integer [ref: > suppliers.id]
+
+// Expected delivery date
+delivery_date date
+
+created_at timestamp [default: `now()`]
+updated_at timestamp [default: `now()`]
+
+// Null until request is closed
+closed_at timestamp
+}
+
+// ======================================================
+// APPROVALS
+// ======================================================
+//
+// Stores approval history.
+//
+// Why separate table?
+//
+// Because one request may have:
+// - multiple approvers
+// - multiple approval actions
+//
+// Example:
+//
+// Request #10
+//   Manager -> Approved
+//   Finance -> Approved
+//   Procurement -> Approved
+//
+// This creates a complete audit trail.
+//
+
+Table approvals {
+id integer [pk, increment]
+
+purchase_request_id integer [
+not null,
+ref: > purchase_requests.id
+]
+
+approver_id integer [
+not null,
+ref: > users.id
+]
+
+// Values:
+// approved
+// rejected
+// pending
+outcome varchar [not null]
+
+comments text
+
+created_at timestamp [default: `now()`]
+}
+
+// ======================================================
+// RELATIONSHIP SUMMARY
+// ======================================================
+//
+// users
+//   |
+//   | 1-to-many
+//   |
+// purchase_requests
+//   |
+//   | 1-to-many
+//   |
+// approvals
+//
+// suppliers
+//   |
+//   | 1-to-many
+//   |
+// purchase_requests
+//
+// ======================================================
+
+// ======================================================
+// FUTURE IMPROVEMENTS
+// ======================================================
+//
+// Table: request_attachments
+// - upload quotations
+// - upload invoices
+//
+// Table: departments
+// - IT
+// - Finance
+// - HR
+//
+// Table: notifications
+// - approval reminders
+//
+// Table: purchase_orders
+// - generated after approval
+//
+// Table: roles
+// - many-to-many user permissions
+//
+// ======================================================
