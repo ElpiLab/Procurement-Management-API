@@ -183,6 +183,11 @@ Create SQLAlchemy ORM models:
 - Camunda Workflow: User > Purchase request > Manager Approval > Procurement Approval > Supplier Assignment > ERP/SAP Export
 - Prio:Signavioo Model: User > Purchase request > Manager Approval > Procurement Approval > Supplier Assignment > ERP/SAP Export
 - Status Model API Logic: Draft > Submitted > Manager Approved > Procurement Approved > Sent to Supplier > Completed > Rejected/Cancelled
+- Business Rules Engine:
+- Auto-routing based on amount
+- Supplier-based rules
+- Department-based approvals
+- SAP sync conditions
 
 
 ###
