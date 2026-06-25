@@ -1,0 +1,199 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" 
+                  xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" 
+                  xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" 
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" 
+                  xmlns:modeler="http://camunda.org/schema/modeler/1.0" 
+                  id="Definitions_Procurement" 
+                  targetNamespace="http://bpmn.io/schema/bpmn" 
+                  exporter="Camunda Modeler" 
+                  exporterVersion="5.38.1" 
+                  modeler:executionPlatform="Camunda Cloud" 
+                  modeler:executionPlatformVersion="8.7.0">
+
+  <bpmn:process id="ProcurementProcess" name="Procurement P2P Process" isExecutable="true">
+
+    <!-- ======================== LANES ======================== -->
+    <bpmn:laneSet id="LaneSet_1" name="Swimlanes">
+      <bpmn:lane id="Lane_Requester" name="Requester">
+        <bpmn:flowNodeRef>StartEvent_1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Activity_CreateRequest</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Activity_SubmitRequest</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Activity_NotifyRevise</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_Manager" name="Manager">
+        <bpmn:flowNodeRef>Activity_ApproveReject</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_Procurement" name="Procurement Team">
+        <bpmn:flowNodeRef>Activity_HighValueReview</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_System" name="System (Automation)">
+        <bpmn:flowNodeRef>Gateway_Amount</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_Approval</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Activity_GenerateOrder</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>EndEvent_1</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+
+    <!-- ======================== ELEMENTS ======================== -->
+
+    <!-- 1. START -->
+    <bpmn:startEvent id="StartEvent_1" name="Start" />
+
+    <!-- 2. REQUESTS (Lane 1) -->
+    <bpmn:userTask id="Activity_CreateRequest" name="Create Purchase Request" />
+    <bpmn:userTask id="Activity_SubmitRequest" name="Submit for Approval" />
+    <bpmn:userTask id="Activity_NotifyRevise" name="Notify Requester to Revise" />
+
+    <!-- 3. GATEWAY 1: AMOUNT CHECK (System Lane) -->
+    <bpmn:exclusiveGateway id="Gateway_Amount" name="Is total > $10,000?" />
+
+    <!-- 4. APPROVAL TASKS -->
+    <bpmn:userTask id="Activity_HighValueReview" name="Review High-Value Request" />
+    <bpmn:userTask id="Activity_ApproveReject" name="Approve or Reject" />
+
+    <!-- 5. GATEWAY 2: APPROVAL OUTCOME (System Lane) -->
+    <bpmn:exclusiveGateway id="Gateway_Approval" name="Approved?" />
+
+    <!-- 6. SERVICE TASK & END -->
+    <bpmn:serviceTask id="Activity_GenerateOrder" name="Generate PO &amp; Send to Supplier" />
+    <bpmn:endEvent id="EndEvent_1" name="Order Placed" />
+
+
+    <!-- ======================== SEQUENCE FLOWS ======================== -->
+
+    <!-- Flow 1: Start -> Create -->
+    <bpmn:sequenceFlow id="Flow_Start_Create" sourceRef="StartEvent_1" targetRef="Activity_CreateRequest" />
+
+    <!-- Flow 2: Create -> Submit -->
+    <bpmn:sequenceFlow id="Flow_Create_Submit" sourceRef="Activity_CreateRequest" targetRef="Activity_SubmitRequest" />
+
+    <!-- Flow 3: Submit -> Gateway (Amount) -->
+    <bpmn:sequenceFlow id="Flow_Submit_Gateway" sourceRef="Activity_SubmitRequest" targetRef="Gateway_Amount" />
+
+    <!-- Flow 4: Gateway -> Procurement (If YES > 10000) -->
+    <bpmn:sequenceFlow id="Flow_Gateway_High" sourceRef="Gateway_Amount" targetRef="Activity_HighValueReview">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${totalPrice > 10000}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+
+    <!-- Flow 5: Gateway -> Manager (If NO <= 10000) -->
+    <bpmn:sequenceFlow id="Flow_Gateway_Manager" sourceRef="Gateway_Amount" targetRef="Activity_ApproveReject">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${totalPrice <= 10000}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+
+    <!-- Flow 6: Procurement Review -> Gateway 2 -->
+    <bpmn:sequenceFlow id="Flow_High_Approval" sourceRef="Activity_HighValueReview" targetRef="Gateway_Approval" />
+
+    <!-- Flow 7: Manager Approve -> Gateway 2 -->
+    <bpmn:sequenceFlow id="Flow_Manager_Approval" sourceRef="Activity_ApproveReject" targetRef="Gateway_Approval" />
+
+    <!-- Flow 8: Gateway 2 -> Rejected (Go back to revise) -->
+    <bpmn:sequenceFlow id="Flow_Approval_Reject" sourceRef="Gateway_Approval" targetRef="Activity_NotifyRevise">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${decision == "rejected"}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+
+    <!-- Flow 9: Notify Revise -> BACK to Create Request (so they can fix it) -->
+    <bpmn:sequenceFlow id="Flow_Revise_Create" sourceRef="Activity_NotifyRevise" targetRef="Activity_CreateRequest" />
+
+    <!-- Flow 10: Gateway 2 -> Approved (Generate Order) -->
+    <bpmn:sequenceFlow id="Flow_Approval_Generate" sourceRef="Gateway_Approval" targetRef="Activity_GenerateOrder">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${decision == "approved"}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+
+    <!-- Flow 11: Generate Order -> END -->
+    <bpmn:sequenceFlow id="Flow_Generate_End" sourceRef="Activity_GenerateOrder" targetRef="EndEvent_1" />
+
+  </bpmn:process>
+
+  <!-- ======================== DIAGRAM LAYOUT (Coordinates) ======================== -->
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="ProcurementProcess">
+      
+      <!-- Lanes Visuals -->
+      <bpmndi:BPMNShape id="Lane_Requester_di" bpmnElement="Lane_Requester" isHorizontal="true" x="120" y="20" width="900" height="100"/>
+      <bpmndi:BPMNShape id="Lane_Manager_di" bpmnElement="Lane_Manager" isHorizontal="true" x="120" y="120" width="900" height="100"/>
+      <bpmndi:BPMNShape id="Lane_Procurement_di" bpmnElement="Lane_Procurement" isHorizontal="true" x="120" y="220" width="900" height="100"/>
+      <bpmndi:BPMNShape id="Lane_System_di" bpmnElement="Lane_System" isHorizontal="true" x="120" y="320" width="900" height="100"/>
+
+      <!-- Shapes -->
+      <bpmndi:BPMNShape id="StartEvent_1_di" bpmnElement="StartEvent_1" x="160" y="50" width="36" height="36"/>
+      <bpmndi:BPMNShape id="Activity_CreateRequest_di" bpmnElement="Activity_CreateRequest" x="250" y="40" width="100" height="60"/>
+      <bpmndi:BPMNShape id="Activity_SubmitRequest_di" bpmnElement="Activity_SubmitRequest" x="400" y="40" width="100" height="60"/>
+      
+      <bpmndi:BPMNShape id="Gateway_Amount_di" bpmnElement="Gateway_Amount" x="580" y="345" width="40" height="40"/>
+      
+      <bpmndi:BPMNShape id="Activity_HighValueReview_di" bpmnElement="Activity_HighValueReview" x="700" y="230" width="100" height="60"/>
+      <bpmndi:BPMNShape id="Activity_ApproveReject_di" bpmnElement="Activity_ApproveReject" x="700" y="130" width="100" height="60"/>
+
+      <bpmndi:BPMNShape id="Gateway_Approval_di" bpmnElement="Gateway_Approval" x="880" y="345" width="40" height="40"/>
+
+      <bpmndi:BPMNShape id="Activity_NotifyRevise_di" bpmnElement="Activity_NotifyRevise" x="880" y="50" width="100" height="60"/>
+      <bpmndi:BPMNShape id="Activity_GenerateOrder_di" bpmnElement="Activity_GenerateOrder" x="1040" y="345" width="100" height="60"/>
+      <bpmndi:BPMNShape id="EndEvent_1_di" bpmnElement="EndEvent_1" x="1200" y="355" width="36" height="36"/>
+
+      <!-- Edges (Lines) -->
+      <bpmndi:BPMNEdge id="Flow_Start_Create_di" bpmnElement="Flow_Start_Create" sourceElement="StartEvent_1_di" targetElement="Activity_CreateRequest_di">
+        <di:waypoint x="196" y="68"/>
+        <di:waypoint x="250" y="68"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Create_Submit_di" bpmnElement="Flow_Create_Submit" sourceElement="Activity_CreateRequest_di" targetElement="Activity_SubmitRequest_di">
+        <di:waypoint x="350" y="70"/>
+        <di:waypoint x="400" y="70"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Submit_Gateway_di" bpmnElement="Flow_Submit_Gateway" sourceElement="Activity_SubmitRequest_di" targetElement="Gateway_Amount_di">
+        <di:waypoint x="500" y="70"/>
+        <di:waypoint x="540" y="70"/>
+        <di:waypoint x="540" y="365"/>
+        <di:waypoint x="580" y="365"/>
+      </bpmndi:BPMNEdge>
+      
+      <bpmndi:BPMNEdge id="Flow_Gateway_High_di" bpmnElement="Flow_Gateway_High" sourceElement="Gateway_Amount_di" targetElement="Activity_HighValueReview_di">
+        <di:waypoint x="620" y="365"/>
+        <di:waypoint x="660" y="365"/>
+        <di:waypoint x="660" y="260"/>
+        <di:waypoint x="700" y="260"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Gateway_Manager_di" bpmnElement="Flow_Gateway_Manager" sourceElement="Gateway_Amount_di" targetElement="Activity_ApproveReject_di">
+        <di:waypoint x="620" y="345"/>
+        <di:waypoint x="660" y="160"/>
+        <di:waypoint x="700" y="160"/>
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="Flow_High_Approval_di" bpmnElement="Flow_High_Approval" sourceElement="Activity_HighValueReview_di" targetElement="Gateway_Approval_di">
+        <di:waypoint x="800" y="260"/>
+        <di:waypoint x="840" y="260"/>
+        <di:waypoint x="840" y="365"/>
+        <di:waypoint x="880" y="365"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Manager_Approval_di" bpmnElement="Flow_Manager_Approval" sourceElement="Activity_ApproveReject_di" targetElement="Gateway_Approval_di">
+        <di:waypoint x="800" y="160"/>
+        <di:waypoint x="860" y="160"/>
+        <di:waypoint x="860" y="365"/>
+        <di:waypoint x="880" y="365"/>
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="Flow_Approval_Reject_di" bpmnElement="Flow_Approval_Reject" sourceElement="Gateway_Approval_di" targetElement="Activity_NotifyRevise_di">
+        <di:waypoint x="900" y="345"/>
+        <di:waypoint x="920" y="80"/>
+        <di:waypoint x="880" y="80"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Revise_Create_di" bpmnElement="Flow_Revise_Create" sourceElement="Activity_NotifyRevise_di" targetElement="Activity_CreateRequest_di">
+        <di:waypoint x="880" y="110"/>
+        <di:waypoint x="860" y="110"/>
+        <di:waypoint x="300" y="110"/>
+        <di:waypoint x="300" y="100"/>
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="Flow_Approval_Generate_di" bpmnElement="Flow_Approval_Generate" sourceElement="Gateway_Approval_di" targetElement="Activity_GenerateOrder_di">
+        <di:waypoint x="920" y="365"/>
+        <di:waypoint x="1040" y="375"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Generate_End_di" bpmnElement="Flow_Generate_End" sourceElement="Activity_GenerateOrder_di" targetElement="EndEvent_1_di">
+        <di:waypoint x="1140" y="375"/>
+        <di:waypoint x="1200" y="373"/>
+      </bpmndi:BPMNEdge>
+
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
