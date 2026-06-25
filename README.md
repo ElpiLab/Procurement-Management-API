@@ -303,5 +303,12 @@ engine = create_engine(
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 Base = declarative_base()
+
+Day3
+- Installed Postgresql
+- After installatioin it called pgAdmin
+- Install locally and Vscode extension and connect to database
+- Created a testdatabase and query it - works
+
 ### To Do
-Install PostgreSQL
+- 
