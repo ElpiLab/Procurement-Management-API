@@ -1,49 +1,34 @@
-#Here is the table for all users
-
-requester (Lane 1: Creates the request)
-
-manager (Lane 2: Approves normal requests)
-
-procurement (Lane 3: Approves high-value requests)
-
-admin (Lane 4-ish: Manages suppliers, system config)
-
 # app/models/user.py
 from sqlalchemy import Column, Integer, String, DateTime, Boolean
 from sqlalchemy.sql import func
-from app.core.database import Base
+from database import Base
 import enum
 
-# Step 1: Define the Enum for the role (like we just discussed!)
+# =========================================================
+# 1. ENUM (Used ONLY by Python to prevent typos)
+# =========================================================
 class UserRole(str, enum.Enum):
-    REQUESTER = "requester"
-    MANAGER = "manager"
-    PROCUREMENT = "procurement"
-    ADMIN = "admin"
+    REQUESTER = "requester"      # Lane 1
+    MANAGER = "manager"          # Lane 2
+    PROCUREMENT = "procurement"  # Lane 3
+    ADMIN = "admin"              # System Admin
 
-# Step 2: Define the SQLAlchemy Class
+# =========================================================
+# 2. SINGLE USER MODEL (Removed the duplicate Requester class)
+# =========================================================
 class User(Base):
     __tablename__ = "users"
-    
-    # id: integer, primary key, auto-increment
+
     id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False)
+    email = Column(String, unique=True, nullable=False, index=True)
     
-    # name: string, cannot be null
-    # HINT: Column(String, nullable=False)
+    # Store the role as a STRING in the DB. 
+    # We use the Enum in Python to restrict it.
+    role = Column(String, default=UserRole.REQUESTER.value, nullable=False) 
     
-    # email: string, unique, cannot be null
-    # HINT: Column(String, unique=True, nullable=False, index=True)
+    hashed_password = Column(String, nullable=False)
+    is_active = Column(Boolean, default=True)
     
-    # role: use the Enum we just defined. Default to "requester".
-    # HINT: Column(Enum(UserRole), default=UserRole.REQUESTER)
-    
-    # hashed_password: We need this for login! (We forgot it earlier).
-    # HINT: Column(String, nullable=False)
-    
-    # created_at: Timestamp, automatically set when record is inserted.
-    # HINT: Column(DateTime(timezone=True), server_default=func.now())
-    
-    # updated_at: Timestamp, automatically updated when record changes.
-    # HINT: Column(DateTime(timezone=True), onupdate=func.now())
-    
-    pass  # <-- DELETE this line and fill in your columns!
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())

@@ -309,6 +309,77 @@ Day3
 - After installatioin it called pgAdmin
 - Install locally and Vscode extension and connect to database
 - Created a testdatabase and query it - works
+- When creating table and writinc class: the class should point to it same in the database: Example:
+Class users should point to users table:
+class User(Base):
+    __tablename__ = "users"   # <-- Points to table "users"
+    # ... columns ...
+
+class Requester(Base):
+    __tablename__ = "users"   # <-- ALSO points to table "users" (DUPLICATE!)
+
+- Mental Model To Keep
+If you’re new, use this rule of thumb:
+If it talks to HTTP, put it in the API layer.
+If it decides what should happen, put it in services.
+If it describes data, put it in models.
+If it defines allowed values, use enums.
+If it stores data, let SQLAlchemy and the database handle it.
+
+### Learning:
+The Backend Developer role is actually about reenforcing business rules. It means, writing class and methods and writing conditions/business rules to it, and decide data storage to ensure compliance, tracability....This code summarize it perfectly:"class RequestService:
+    @staticmethod
+    def submit_for_approval(db: Session, request_id: int):
+        request = db.query(PurchaseRequest).filter(PurchaseRequest.id == request_id).first()
+
+        if request is None:
+            raise ValueError("Purchase request not found.")
+
+        if request.status != RequestStatus.DRAFT.value:
+            raise ValueError("Only draft requests can be submitted.")
+
+        if not request.supplier_id:
+            raise ValueError("Please select a supplier before submitting.")
+
+        request.status = (
+            RequestStatus.PENDING_PROCUREMENT.value
+            if (request.total_price or 0) > 10000
+            else RequestStatus.PENDING_MANAGER.value
+        )
+
+        db.commit()
+        db.refresh(request)
+        return request
+
+    @staticmethod
+    def approve_request(db: Session, request_id: int, current_user: User, decision: str):
+        request = db.query(PurchaseRequest).filter(PurchaseRequest.id == request_id).first()
+
+        if request is None:
+            raise ValueError("Purchase request not found.")
+
+        if request.status == RequestStatus.PENDING_MANAGER.value and current_user.role != "manager":
+            raise PermissionError("Only Managers can approve this request.")
+
+        if request.status == RequestStatus.PENDING_PROCUREMENT.value and current_user.role != "procurement":
+            raise PermissionError("Only Procurement team can approve this high-value request.")
+
+        if request.status not in [RequestStatus.PENDING_MANAGER.value, RequestStatus.PENDING_PROCUREMENT.value]:
+            raise ValueError("This request is not pending approval.")
+
+        if decision == "approved":
+            request.status = RequestStatus.ORDER_PLACED.value
+            OrderService.send_to_supplier(request)
+        elif decision == "rejected":
+            request.status = RequestStatus.REJECTED.value
+        else:
+            raise ValueError("decision must be either 'approved' or 'rejected'.")
+
+        db.commit()
+        db.refresh(request)
+        return request"
+
+- 
 
 ### To Do
 - 
