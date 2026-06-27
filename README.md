@@ -326,6 +326,36 @@ If it describes data, put it in models.
 If it defines allowed values, use enums.
 If it stores data, let SQLAlchemy and the database handle it.
 
+### How The Files Connect
+
+Think of the app as a chain:
+
+1. `app/main.py` starts the FastAPI app.
+2. `app/main.py` imports `Base` and `engine` from `app/core/database.py`.
+3. `app/main.py` also imports the model modules so SQLAlchemy can register every table.
+4. Each model imports `Base` from `app/core/database.py`.
+5. `Base.metadata.create_all(bind=engine)` creates tables for every loaded model.
+6. Services read and update those models through a database session.
+
+So the dependency order is:
+
+`main.py -> core/database.py -> models -> services`
+
+That is why imports matter so much. If a model imports `Base` from the wrong place, or if `main.py` imports the wrong package, the whole startup chain breaks.
+
+### Where Auth And JWT Fit
+
+Authentication lives beside the business logic, not inside the models.
+
+- `app/core/security.py` handles password hashing and JWT token creation.
+- Later, routes will call security helpers to log users in.
+- Services will still enforce business rules like role checks.
+
+In short:
+
+- `security.py` answers: "Who is this user?"
+- `services/` answers: "Is this user allowed to do this action?"
+
 ### Learning:
 The Backend Developer role is actually about reenforcing business rules. It means, writing class and methods and writing conditions/business rules to it, and decide data storage to ensure compliance, tracability....This code summarize it perfectly:"class RequestService:
     @staticmethod
@@ -380,6 +410,13 @@ The Backend Developer role is actually about reenforcing business rules. It mean
         return request"
 
 - 
+
+### Day4:
+- To see UI in browser: localhost:...../docs#/
+- Authentication lives beside the business logic, not inside the models.
+- 
+
+
 
 ### To Do
 - 

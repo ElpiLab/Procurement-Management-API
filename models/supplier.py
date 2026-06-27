@@ -1,12 +1,14 @@
 from sqlalchemy import Boolean, Column, DateTime, Integer, String
 from sqlalchemy.sql import func
 
-from database import Base
+# Supplier is another table that purchase requests point to through supplier_id.
+from app.core.database import Base
 
 
 class Supplier(Base):
     __tablename__ = "suppliers"
 
+    # Supplier records hold vendor identity and contact details.
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, unique=True, nullable=False)
     contact_person = Column(String, nullable=True)

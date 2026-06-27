@@ -1,7 +1,7 @@
 # app/models/user.py
 from sqlalchemy import Column, Integer, String, DateTime, Boolean
 from sqlalchemy.sql import func
-from database import Base
+from app.core.database import Base
 import enum
 
 # =========================================================
@@ -19,6 +19,7 @@ class UserRole(str, enum.Enum):
 class User(Base):
     __tablename__ = "users"
 
+    # User rows are used for login and for role-based workflow checks.
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False)
     email = Column(String, unique=True, nullable=False, index=True)

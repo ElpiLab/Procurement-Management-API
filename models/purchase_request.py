@@ -1,12 +1,14 @@
 from sqlalchemy import Column, Date, DateTime, Float, ForeignKey, Integer, String, Text
 from sqlalchemy.sql import func
 
-from database import Base
+# Import Base from the shared database module so the ORM can register this table.
+from app.core.database import Base
 
 
 class PurchaseRequest(Base):
     __tablename__ = "purchase_requests"
 
+    # This is the main workflow record: request details, routing, and lifecycle state.
     id = Column(Integer, primary_key=True, index=True)
     title = Column(String, nullable=False)
     description = Column(Text, nullable=True)
