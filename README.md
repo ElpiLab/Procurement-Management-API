@@ -293,8 +293,8 @@ SupplierStatus (onboarded, pending_review, blocked).
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
-# SQLite runs entirely in a file called "procurement.db" in your project root.
-# No Docker. No PostgreSQL server.
+- SQLite runs entirely in a file called "procurement.db" in your project root.
+- No Docker. No PostgreSQL server.
 SQLALCHEMY_DATABASE_URL = "sqlite:///./procurement.db"
 
 engine = create_engine(
@@ -313,7 +313,6 @@ Day3
 Class users should point to users table:
 class User(Base):
     __tablename__ = "users"   # <-- Points to table "users"
-    # ... columns ...
 
 class Requester(Base):
     __tablename__ = "users"   # <-- ALSO points to table "users" (DUPLICATE!)
